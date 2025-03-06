@@ -5,18 +5,18 @@ use sea_orm::entity::prelude::*;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(table_name = "networks")]
 pub struct Model {
-    pub project_id: Option<String>,
+    pub project_id: String,
     #[sea_orm(primary_key, auto_increment = false)]
     pub id: String,
     pub name: Option<String>,
     pub status: Option<String>,
     pub admin_state_up: Option<i8>,
-    pub vlan_transparent: Option<i8>,
+    //pub vlan_transparent: Option<i8>,
     #[sea_orm(unique)]
     pub standard_attr_id: i64,
-    pub availability_zone_hints: Option<String>,
-    pub mtu: i32,
-    pub qinq: Option<i8>,
+    //pub availability_zone_hints: Option<String>,
+    //pub mtu: i32,
+    //pub qinq: Option<i8>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

@@ -14,6 +14,9 @@ use tower_http::{
 };
 use tracing::{Level, info_span};
 use tracing_subscriber::{filter::LevelFilter, prelude::*};
+use utoipa::OpenApi;
+use utoipa_axum::router::OpenApiRouter;
+use utoipa_swagger_ui::SwaggerUi;
 
 use neutron_db_opa_proxy::{Config, Service, api};
 

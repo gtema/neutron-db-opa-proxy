@@ -18,6 +18,7 @@ color-eyre = { version = "^0.6" }
 config = { version = "^0.15", features = ["ini"] }
 derive_builder = { version = "^0.20" }
 eyre = { version = "^0.6" }
+mockall_double = { version = "^0.3" }
 regex = { version = "^1.11"}
 sea-orm = { version = "^1.1", features = ["sqlx-mysql", "sqlx-postgres", "runtime-tokio"] }
 serde = { version = "^1.0" }
@@ -35,6 +36,7 @@ utoipa-swagger-ui = { version = "^9.0", features = ["axum", "vendored"], default
 
 [dev-dependencies]
 http-body-util = "^0.1"
+mockall = { version = "^0.13" }
 sea-orm = { version = "*", features = ["mock"]}
 
 [profile.release]

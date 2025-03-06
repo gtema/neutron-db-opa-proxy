@@ -1,7 +1,10 @@
 use axum::extract::FromRef;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
+use mockall_double::double;
 
+#[double]
+use crate::api::db::DbWorker;
 use crate::Config;
 use crate::ServiceError;
 
@@ -9,9 +12,10 @@ use crate::ServiceError;
 // Clone
 #[derive(FromRef)]
 pub struct Service {
-    pub config: Config,
+    pub(crate) config: Config,
     #[from_ref(skip)]
-    pub db: DatabaseConnection,
+    pub(crate) db: DatabaseConnection,
+    pub(crate) db_worker: DbWorker,
 }
 
 pub type ServiceState = Arc<Service>;
@@ -21,6 +25,7 @@ impl Service {
         Ok(Self {
             config: cfg.clone(),
             db,
+            db_worker: DbWorker::default()
         })
     }
 }
