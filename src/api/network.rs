@@ -27,7 +27,8 @@ async fn show(
     Path(network_id): Path<String>,
     State(state): State<ServiceState>,
 ) -> Result<impl IntoResponse, ApiError> {
-    state.db_worker
+    state
+        .db_worker
         .get_network(&state.db, network_id.clone())
         .await
         .map(|x| x.ok_or_else(|| ApiError::NotFound(network_id.clone())))?
@@ -53,13 +54,16 @@ mod tests {
     #[tokio::test]
     async fn test_show() {
         let mut mock = MockDbWorker::default();
-        mock
-            .expect_get_network()
+        mock.expect_get_network()
             .returning(|_, _| Ok(Some(Network::default())));
 
         let db = DatabaseConnection::Disconnected;
         let config = Config::default();
-        let service = Service{config, db, db_worker: mock};
+        let service = Service {
+            config,
+            db,
+            db_worker: mock,
+        };
         let state = Arc::new(service);
 
         let mut api = openapi_router()

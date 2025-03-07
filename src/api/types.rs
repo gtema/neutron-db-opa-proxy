@@ -18,6 +18,11 @@ pub struct Network {
 
 impl IntoResponse for Network {
     fn into_response(self) -> Response {
-        (StatusCode::OK, Json(self)).into_response()
+        (
+            StatusCode::OK,
+            [("Cache-Control", "max-age=604800")],
+            Json(self),
+        )
+            .into_response()
     }
 }
