@@ -1,12 +1,12 @@
 use axum::extract::FromRef;
+use mockall_double::double;
 use sea_orm::DatabaseConnection;
 use std::sync::Arc;
-use mockall_double::double;
 
-#[double]
-use crate::api::db::DbWorker;
 use crate::Config;
 use crate::ServiceError;
+#[double]
+use crate::api::db::DbWorker;
 
 // Placing ServiceState behind Arc is necessary to address DatabaseConnection not implementing
 // Clone
@@ -25,7 +25,7 @@ impl Service {
         Ok(Self {
             config: cfg.clone(),
             db,
-            db_worker: DbWorker::default()
+            db_worker: DbWorker::default(),
         })
     }
 }

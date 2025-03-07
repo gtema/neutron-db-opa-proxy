@@ -98,7 +98,7 @@ async fn main() -> Result<(), Report> {
         .layer(middleware)
         .with_state(shared_state.clone());
 
-    let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
+    let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 9098));
     let listener = TcpListener::bind(&address).await?;
     Ok(axum::serve(listener, app.into_make_service()).await?)
 }
