@@ -5,33 +5,33 @@ use axum::{
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::ServiceState;
-use crate::api::{db::Neutron, error::ApiError, types::Network};
+use crate::api::{db::Neutron, error::ApiError, types::SecurityGroup};
 
 pub(super) fn openapi_router() -> OpenApiRouter<ServiceState> {
     OpenApiRouter::new().routes(routes!(show))
 }
 
-/// Show network properties
+/// Show security group properties
 #[utoipa::path(
     get,
-    path = "/{network_id}",
-    description = "Show network",
+    path = "/{security_group_id}",
+    description = "Show security group",
     responses(
-        (status = OK, description = "Network", body = Network),
+        (status = OK, description = "Security group", body = SecurityGroup),
     ),
-    tag="networks"
+    tag="security_groups"
 )]
 #[axum::debug_handler]
-#[tracing::instrument(name = "api::get_network", level = "debug", skip(state))]
+#[tracing::instrument(name = "api::get_security_group", level = "debug", skip(state))]
 async fn show(
-    Path(network_id): Path<String>,
+    Path(security_group_id): Path<String>,
     State(state): State<ServiceState>,
 ) -> Result<impl IntoResponse, ApiError> {
     state
         .db_worker
-        .get_network(&state.db, &network_id)
+        .get_security_group(&state.db, &security_group_id)
         .await
-        .map(|x| x.ok_or_else(|| ApiError::NotFound(network_id.clone())))?
+        .map(|x| x.ok_or_else(|| ApiError::NotFound(security_group_id.clone())))?
 }
 
 #[cfg(test)]
@@ -54,8 +54,8 @@ mod tests {
     #[tokio::test]
     async fn test_show() {
         let mut mock = MockDbWorker::default();
-        mock.expect_get_network()
-            .returning(|_, _| Ok(Some(Network::default())));
+        mock.expect_get_security_group()
+            .returning(|_, _| Ok(Some(SecurityGroup::default())));
 
         let db = DatabaseConnection::Disconnected;
         let config = Config::default();
@@ -79,6 +79,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = response.into_body().collect().await.unwrap().to_bytes();
-        let _res: Network = serde_json::from_slice(&body).unwrap();
+        let _res: SecurityGroup = serde_json::from_slice(&body).unwrap();
     }
 }
