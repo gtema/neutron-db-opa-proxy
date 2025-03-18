@@ -11,9 +11,9 @@ use crate::db::{
     floatingips as db_floating_ip, networkrbacs as db_networkrbacs, networks as db_network,
     prelude::{
         Floatingips as DbFloatingIp, Networkrbacs as DbNetworkRbacs, Networks as DbNetwork,
-        Securitygroups as DbSecurityGroups,
+        Securitygroups as DbSecurityGroups, Subnets as DbSubnet,
     },
-    securitygroups as db_security_group,
+    securitygroups as db_security_group, subnets as db_subnet,
 };
 
 #[async_trait]
@@ -29,6 +29,12 @@ pub trait Neutron {
         db: &DatabaseConnection,
         id: &'a str,
     ) -> Result<Option<Network>, ApiError>;
+
+    async fn get_subnet<'a>(
+        &self,
+        db: &DatabaseConnection,
+        id: &'a str,
+    ) -> Result<Option<Subnet>, ApiError>;
 
     async fn get_security_group<'a>(
         &self,
@@ -77,6 +83,16 @@ impl Neutron for DbWorker {
         }
     }
 
+    async fn get_subnet<'a>(
+        &self,
+        db: &DatabaseConnection,
+        id: &'a str,
+    ) -> Result<Option<Subnet>, ApiError> {
+        let select = DbSubnet::find_by_id(id);
+        let entry: Option<db_subnet::Model> = select.one(db).await?;
+        Ok(entry.map(Subnet::from))
+    }
+
     async fn get_security_group<'a>(
         &self,
         db: &DatabaseConnection,
@@ -97,6 +113,7 @@ mock! {
     impl Neutron for DbWorker {
         async fn get_floating_ip<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<FloatingIP>, ApiError>;
         async fn get_network<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<Network>, ApiError>;
+        async fn get_subnet<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<Subnet>, ApiError>;
         async fn get_security_group<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<SecurityGroup>, ApiError>;
     }
 
@@ -126,6 +143,18 @@ impl From<&db_network::Model> for Network {
             tenant_id: value.project_id.clone(),
             status: value.status.clone(),
             shared: false,
+        }
+    }
+}
+
+impl From<db_subnet::Model> for Subnet {
+    fn from(value: db_subnet::Model) -> Self {
+        Self {
+            id: value.id.clone(),
+            name: value.name.clone(),
+            network_id: value.network_id.clone(),
+            project_id: value.project_id.clone(),
+            tenant_id: value.project_id.clone(),
         }
     }
 }
@@ -223,6 +252,37 @@ mod tests {
         );
     }
 
+    #[tokio::test]
+    async fn test_get_subnet() {
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results([vec![db_subnet::Model {
+                id: "id".into(),
+                name: Some("default".into()),
+                network_id: "foo".into(),
+                ip_version: 4,
+                cidr: "0.0.0.0".into(),
+                gateway_ip: None,
+                enable_dhcp: None,
+                ipv6_ra_mode: None,
+                ipv6_address_mode: None,
+                subnetpool_id: None,
+                segment_id: None,
+                standard_attr_id: 0,
+                project_id: Some("project".into()),
+            }]])
+            .into_connection();
+
+        let _res = DbWorker {}.get_subnet(&db, "id").await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [Transaction::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                r#"SELECT "subnets"."project_id", "subnets"."id", "subnets"."name", "subnets"."network_id", "subnets"."ip_version", "subnets"."cidr", "subnets"."gateway_ip", "subnets"."enable_dhcp", CAST("subnets"."ipv6_ra_mode" AS text), CAST("subnets"."ipv6_address_mode" AS text), "subnets"."subnetpool_id", "subnets"."standard_attr_id", "subnets"."segment_id" FROM "subnets" WHERE "subnets"."id" = $1 LIMIT $2"#,
+                ["id".into(), 1u64.into()]
+            ),]
+        );
+    }
     #[tokio::test]
     async fn test_get_sg() {
         let db = MockDatabase::new(DatabaseBackend::Postgres)
