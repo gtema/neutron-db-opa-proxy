@@ -10,8 +10,7 @@ on:
       - 'Cargo.lock'
       - '.github/workflows/container-build.yml'
       - '.github/workflows/container-publish.yml'
-      - 'openstack_cli/**'
-      - 'openstack_sdk/**'
+      - 'src/**'
       - 'Dockerfile'
       - '.dockerignore'
 

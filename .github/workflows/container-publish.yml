@@ -6,8 +6,6 @@ name: Create and publish container image
 on:
   push:
     branches: ['main']
-    tags:
-      - 'openstack_cli-v*'
 
 permissions:
   contents: read
@@ -54,7 +52,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=match,pattern=openstack_cli-v(\d.\d.\d),group=1
+            type=match,pattern=neutron_db_opa_proxy-v(\d.\d.\d),group=1
             type=sha
 
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.

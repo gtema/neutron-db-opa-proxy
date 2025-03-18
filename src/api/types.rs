@@ -34,6 +34,32 @@ impl IntoResponse for Network {
     }
 }
 
+/// Subnet resource
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, ToSchema)]
+pub struct Subnet {
+    /// Subnet ID
+    pub id: String,
+    /// Subnet name
+    pub name: Option<String>,
+    /// Network id
+    pub network_id: String,
+    /// Project ID of a subnet
+    pub project_id: Option<String>,
+    /// Project ID of a subnet
+    pub tenant_id: Option<String>,
+}
+
+impl IntoResponse for Subnet {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::OK,
+            [("Cache-Control", "max-age=604800")],
+            Json(self),
+        )
+            .into_response()
+    }
+}
+
 /// Security group resource
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, ToSchema)]
 pub struct SecurityGroup {
