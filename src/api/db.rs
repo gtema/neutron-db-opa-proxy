@@ -278,7 +278,7 @@ mod tests {
             db.into_transaction_log(),
             [Transaction::from_sql_and_values(
                 DatabaseBackend::Postgres,
-                r#"SELECT "subnets"."project_id", "subnets"."id", "subnets"."name", "subnets"."network_id", "subnets"."ip_version", "subnets"."cidr", "subnets"."gateway_ip", "subnets"."enable_dhcp", CAST("subnets"."ipv6_ra_mode" AS text), CAST("subnets"."ipv6_address_mode" AS text), "subnets"."subnetpool_id", "subnets"."standard_attr_id", "subnets"."segment_id" FROM "subnets" WHERE "subnets"."id" = $1 LIMIT $2"#,
+                r#"SELECT "subnets"."project_id", "subnets"."id", "subnets"."name", "subnets"."network_id", "subnets"."ip_version", "subnets"."cidr", "subnets"."gateway_ip", "subnets"."enable_dhcp", CAST("subnets"."ipv6_ra_mode" AS "text"), CAST("subnets"."ipv6_address_mode" AS "text"), "subnets"."subnetpool_id", "subnets"."standard_attr_id", "subnets"."segment_id" FROM "subnets" WHERE "subnets"."id" = $1 LIMIT $2"#,
                 ["id".into(), 1u64.into()]
             ),]
         );
