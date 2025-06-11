@@ -4,7 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 /// Network resource
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, ToSchema)]
@@ -32,6 +32,13 @@ impl IntoResponse for Network {
         )
             .into_response()
     }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, IntoParams)]
+pub struct NetworkQueryParams {
+    /// The scope project id. Used to identify whether the target network is shared to that
+    /// project.
+    pub context_project_id: Option<String>,
 }
 
 /// Subnet resource

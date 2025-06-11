@@ -28,6 +28,7 @@ pub trait Neutron {
         &self,
         db: &DatabaseConnection,
         id: &'a str,
+        params: &NetworkQueryParams,
     ) -> Result<Option<Network>, ApiError>;
 
     async fn get_subnet<'a>(
@@ -62,18 +63,25 @@ impl Neutron for DbWorker {
         &self,
         db: &DatabaseConnection,
         id: &'a str,
+        params: &NetworkQueryParams,
     ) -> Result<Option<Network>, ApiError> {
         let select = DbNetwork::find_by_id(id);
         let entry: Option<db_network::Model> = select.one(db).await?;
         match &entry {
             Some(net) => {
                 let mut n = Network::from(net);
-                let rbac: Option<db_networkrbacs::Model> = DbNetworkRbacs::find()
+                let mut rbac_query = DbNetworkRbacs::find()
                     .filter(db_networkrbacs::Column::Action.eq("access_as_shared"))
-                    .filter(db_networkrbacs::Column::ObjectId.eq(id))
-                    .filter(db_networkrbacs::Column::TargetProject.eq("*"))
-                    .one(db)
-                    .await?;
+                    .filter(db_networkrbacs::Column::ObjectId.eq(id));
+                if let Some(context_project_id) = &params.context_project_id {
+                    rbac_query = rbac_query.filter(
+                        db_networkrbacs::Column::TargetProject.is_in(vec!["*", context_project_id]),
+                    );
+                } else {
+                    rbac_query = rbac_query.filter(db_networkrbacs::Column::TargetProject.eq("*"));
+                }
+
+                let rbac: Option<db_networkrbacs::Model> = rbac_query.one(db).await?;
                 if rbac.is_some() {
                     n.shared = true;
                 }
@@ -112,7 +120,7 @@ mock! {
     #[async_trait]
     impl Neutron for DbWorker {
         async fn get_floating_ip<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<FloatingIP>, ApiError>;
-        async fn get_network<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<Network>, ApiError>;
+        async fn get_network<'a>(&self, db: &DatabaseConnection, id: &'a str, params: &NetworkQueryParams) -> Result<Option<Network>, ApiError>;
         async fn get_subnet<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<Subnet>, ApiError>;
         async fn get_security_group<'a>(&self, db: &DatabaseConnection, id: &'a str) -> Result<Option<SecurityGroup>, ApiError>;
     }
@@ -208,7 +216,56 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_get_network() {
+    async fn test_get_network_context_project() {
+        // Create MockDatabase with mock query results
+        let db = MockDatabase::new(DatabaseBackend::Postgres)
+            .append_query_results([vec![networks::Model {
+                id: "id".into(),
+                name: Some("name".into()),
+                status: Some("broken".into()),
+                admin_state_up: Some(0),
+                project_id: "project".into(),
+                standard_attr_id: 0,
+            }]])
+            .append_query_results([vec![networkrbacs::Model {
+                id: "rbacid".into(),
+                object_id: "network_id".into(),
+                project_id: Some("project".into()),
+                target_project: "pid".into(),
+                action: "access_as_shared".into(),
+            }]])
+            .into_connection();
+
+        let qp = NetworkQueryParams {
+            context_project_id: Some("pid".into()),
+        };
+        let _res = DbWorker {}.get_network(&db, "id", &qp).await;
+
+        assert_eq!(
+            db.into_transaction_log(),
+            [
+                Transaction::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    r#"SELECT "networks"."project_id", "networks"."id", "networks"."name", "networks"."status", "networks"."admin_state_up", "networks"."standard_attr_id" FROM "networks" WHERE "networks"."id" = $1 LIMIT $2"#,
+                    ["id".into(), 1u64.into()]
+                ),
+                Transaction::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    r#"SELECT "networkrbacs"."id", "networkrbacs"."object_id", "networkrbacs"."project_id", "networkrbacs"."target_project", "networkrbacs"."action" FROM "networkrbacs" WHERE "networkrbacs"."action" = $1 AND "networkrbacs"."object_id" = $2 AND "networkrbacs"."target_project" IN ($3, $4) LIMIT $5"#,
+                    [
+                        "access_as_shared".into(),
+                        "id".into(),
+                        "*".into(),
+                        "pid".into(),
+                        1u64.into()
+                    ]
+                ),
+            ]
+        );
+    }
+
+    #[tokio::test]
+    async fn test_get_network_no_context_project() {
         // Create MockDatabase with mock query results
         let db = MockDatabase::new(DatabaseBackend::Postgres)
             .append_query_results([vec![networks::Model {
@@ -228,7 +285,10 @@ mod tests {
             }]])
             .into_connection();
 
-        let _res = DbWorker {}.get_network(&db, "id").await;
+        let qp = NetworkQueryParams {
+            context_project_id: None,
+        };
+        let _res = DbWorker {}.get_network(&db, "id", &qp).await;
 
         assert_eq!(
             db.into_transaction_log(),
@@ -251,7 +311,6 @@ mod tests {
             ]
         );
     }
-
     #[tokio::test]
     async fn test_get_subnet() {
         let db = MockDatabase::new(DatabaseBackend::Postgres)

@@ -1,11 +1,15 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     response::IntoResponse,
 };
 use utoipa_axum::{router::OpenApiRouter, routes};
 
 use crate::ServiceState;
-use crate::api::{db::Neutron, error::ApiError, types::Network};
+use crate::api::{
+    db::Neutron,
+    error::ApiError,
+    types::{Network, NetworkQueryParams},
+};
 
 pub(super) fn openapi_router() -> OpenApiRouter<ServiceState> {
     OpenApiRouter::new().routes(routes!(show))
@@ -15,6 +19,7 @@ pub(super) fn openapi_router() -> OpenApiRouter<ServiceState> {
 #[utoipa::path(
     get,
     path = "/{network_id}",
+    params(NetworkQueryParams),
     description = "Show network",
     responses(
         (status = OK, description = "Network", body = Network),
@@ -25,11 +30,12 @@ pub(super) fn openapi_router() -> OpenApiRouter<ServiceState> {
 #[tracing::instrument(name = "api::get_network", level = "debug", skip(state))]
 async fn show(
     Path(network_id): Path<String>,
+    Query(params): Query<NetworkQueryParams>,
     State(state): State<ServiceState>,
 ) -> Result<impl IntoResponse, ApiError> {
     state
         .db_worker
-        .get_network(&state.db, &network_id)
+        .get_network(&state.db, &network_id, &params)
         .await
         .map(|x| x.ok_or_else(|| ApiError::NotFound(network_id.clone())))?
 }
@@ -55,7 +61,7 @@ mod tests {
     async fn test_show() {
         let mut mock = MockDbWorker::default();
         mock.expect_get_network()
-            .returning(|_, _| Ok(Some(Network::default())));
+            .returning(|_, _, _| Ok(Some(Network::default())));
 
         let db = DatabaseConnection::Disconnected;
         let config = Config::default();
