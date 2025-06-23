@@ -30,7 +30,7 @@ tower = { version = "^0.5" }
 tower-http = { version = "^0.6", features = ["compression-full", "request-id", "sensitive-headers", "trace", "util"] }
 tracing = { version = "^0.1" }
 tracing-subscriber = { version = "^0.3" }
-utoipa = { version = "^5.3", features = ["axum_extras", "chrono"] }
+utoipa = { version = "^5.4", features = ["axum_extras", "chrono"] }
 utoipa-axum = { version = "^0.2" }
 utoipa-swagger-ui = { version = "^9.0", features = ["axum", "vendored"], default-features = false }
 
