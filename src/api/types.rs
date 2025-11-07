@@ -70,7 +70,7 @@ impl IntoResponse for Subnet {
 /// Security group resource
 #[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize, ToSchema)]
 pub struct SecurityGroup {
-    /// Seurity group ID
+    /// Security group ID.
     pub id: String,
     /// Security group name
     pub name: Option<String>,
