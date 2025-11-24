@@ -36,7 +36,7 @@ utoipa-swagger-ui = { version = "^9.0", features = ["axum", "vendored"], default
 
 [dev-dependencies]
 http-body-util = "^0.1"
-mockall = { version = "^0.13" }
+mockall = { version = "^0.14" }
 sea-orm = { version = "*", features = ["mock"]}
 
 [profile.release]
